@@ -1,0 +1,3 @@
+requests
+smart_open
+smart_open[aws]
