@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  AWS SAM application to process ZTF daily alerts 
+  AWS SAM application to process ZTF daily alerts
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -18,49 +18,72 @@ Resources:
       BucketName: !Sub 'ztf-${AWS::Region}-${AWS::AccountId}'
 
   ZTFLambdaRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service:
-                - 'lambda.amazonaws.com'
-            Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
 
-  DownloadDailyAlerts:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  ZTFS3AccessPolicy:
+    Type: AWS::IAM::Policy
     Properties:
-      CodeUri: src/
-      Handler: ztf.DownloadDailyAlertsHandler
-      Role: !GetAtt ZTFLambdaRole.Arn
-      Environment:
-        Variables:
-          S3_BUCKET_NAME: !Ref ZTFS3Bucket
-          S3_PREFIX: Alerts
-      Events:
-        DownloadDailyAlert:
-          Type: Api
-          Properties:
-            Path: /DownloadDailyAlerts
-            Method: post
+      PolicyName: S3AccessPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:ListBucket
+          Resource:
+          - !GetAtt ZTFS3Bucket.Arn
+          - Fn::Sub:
+            - ${ZTFS3BucketArn}/*
+            - ZTFS3BucketArn: !GetAtt ZTFS3Bucket.Arn
+        - Effect: Allow
+          Action: s3:HeadBucket
+          Resource: "*"
+      Roles:
+      - !Ref ZTFLambdaRole
 
-  ExpandDailyAlerts:
+  ZTFRuntimeLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ZTFRuntime
+      Description: Base runtime for ZTF functions
+      ContentUri: dependencies/ZTFRuntime
+      CompatibleRuntimes:
+      - python3.6
+      LicenseInfo: (c) rostskadat-at-gmail-dot-com
+      RetentionPolicy: Delete
+
+  ProcessAvro:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/
-      Handler: ztf.ExpandDailyAlertsHandler
+      Handler: ztf.ProcessAvro.lambda_handler
       Role: !GetAtt ZTFLambdaRole.Arn
+      MemorySize: 256
       Environment:
         Variables:
-          S3_PREFIX: Avro
+          HOME: /tmp
       Events:
-        AlertsDownloadedEvent:
+        TriggerProcessAvro:
+          Type: Api
+          Properties:
+            Path: /avro/process
+            Method: post
+        ProcessAvro:
           Type: S3
           Properties:
             Bucket: !Ref ZTFS3Bucket
@@ -69,29 +92,19 @@ Resources:
               S3Key:
                 Rules:
                 - Name: prefix
-                  Value: Alerts/
+                  Value: Avro/
                 - Name: suffix
-                  Value: tar.gz
-
-  # ProcessAvroFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: src/
-  #     Handler: ztf.ProcessAvroHandler
-  #     Events:
-  #       ProcessAvro:
-  #         Type: Api
-  #         Properties:
-  #           Path: /ProcessAvro
-  #           Method: post
+                  Value: .avro
+      Layers:
+      - !Ref ZTFRuntimeLayer
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  DownloadDailyAlertsApi:
+  ProcessAvroApi:
     Description: "API Gateway endpoint URL for Prod stage for function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/DownloadDailyAlerts/"
-  DownloadDailyAlerts:
-    Description: "DownloadDailyAlerts Lambda Function ARN"
-    Value: !GetAtt DownloadDailyAlerts.Arn
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/avro/process/"
+  ProcessAvro:
+    Description: "ProcessAvro Lambda Function ARN"
+    Value: !GetAtt ProcessAvro.Arn

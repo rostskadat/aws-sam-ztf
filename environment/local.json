@@ -1,4 +1,5 @@
 {
   "DownloadDailyAlerts": { "S3_BUCKET_NAME": "ztf-eu-west-1-791682668801"},
-  "ExpandDailyAlerts": { "S3_PREFIX": "Avro"}
+  "ExpandDailyAlerts": { "S3_PREFIX": "Avro"},
+  "ProcessAvro": { "S3_PREFIX": "Plots"}
 }

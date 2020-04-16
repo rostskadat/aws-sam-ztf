@@ -1,3 +1,1 @@
-requests
-smart_open
-smart_open[aws]
+# All dependencies are gathered in the dependencies/ZTFRuntime/requirements.txt

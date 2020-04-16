@@ -1,3 +1,0 @@
-from ztf.DownloadDailyAlerts import lambda_handler as DownloadDailyAlertsHandler
-from ztf.ExpandDailyAlerts import lambda_handler as ExpandDailyAlertsHandler
-from ztf.ProcessAvro import lambda_hanlder as ProcessAvroHandler

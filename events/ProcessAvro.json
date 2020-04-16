@@ -27,9 +27,9 @@
           "arn": "arn:aws:s3:::lambda-artifacts-deafc19498e3f2df"
         },
         "object": {
-          "key": "Alerts/ztf_public_20200330.tar.gz",
+          "key": "Avro/1122111710015010009.avro",
           "size": 1305107,
-          "eTag": "Alerts/ztf_public_20200330.tar.gz",
+          "eTag": "Avro/1122111710015010009.avro",
           "sequencer": "0C0F6F405D6ED209E1"
         }
       }

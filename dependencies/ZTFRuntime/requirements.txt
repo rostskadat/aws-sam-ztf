@@ -1,0 +1,11 @@
+# All dependencies are gathered in the ZTFRuntimeLayer to improve performance
+requests
+smart_open
+#smart_open[aws]
+avro-python3
+#fastavro
+pandas
+numpy
+astropy
+matplotlib
+#aplpy

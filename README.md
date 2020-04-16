@@ -1,14 +1,20 @@
 # AWS-ZTF
 
 ```bash
+./update_layer.#!/bin/sh
 sam build --use-container
-sam local invoke DownloadDailyAlerts --env-vars environment/local.json
-sam local invoke DownloadDailyAlerts --env-vars environment/local.json --event events/DownloadDailyAlerts.json
-sam local invoke ExpandDailyAlerts --env-vars environment/local.json
-sam local invoke ExpandDailyAlerts --env-vars environment/local.json --event events/ExpandDailyAlerts.json
-sam deploy --guided
+sam local invoke ProcessAvro --env-vars environment/local.json
+sam local invoke ProcessAvro --env-vars environment/local.json --event events/ProcessAvro.json
 ```
 
+You can then test your newly updated function
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d @events/ProcessAvro.json \
+  https://ly2yysu19e.execute-api.eu-west-1.amazonaws.com/Prod/avro/process
+```
 
 # sam-app
 
